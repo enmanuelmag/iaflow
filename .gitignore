@@ -1,20 +1,11 @@
 /build/
 
+/models/
+
 /tests/
 
 /.vscode/
 
 /dist/
 
-/notifier_function/__pycache__/
-
 __pycache__/
-
-notifier_function.egg-info
-
-tests.py
-
-notifier.cpython-37
-
-notifier_function/__pycache__/notifier.cpython-37.pyc
-Step to update.txt

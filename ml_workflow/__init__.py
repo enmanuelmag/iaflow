@@ -9,18 +9,22 @@ from datetime import datetime
 from notifier import Notifier
 
 
-def __find_endwith(path: str, endwith: str):
+def find_endwith(path: str, endwith: str):
+  if not os.path.exists(path):
+    os.makedirs(path, exist_ok=True)
+    return None
+
   for filename in os.listdir(path):
     if filename.endswith(endwith):
       return os.path.join(path, filename)
   return None
 
-def __get_params_models(load_model: bool, path_model: str, model_params: T.Dict):
+def get_params_models(load_model: bool, path_model: str, model_params: T.Dict):
   if not load_model:
     return model_params
   
   params = None
-  path_params = __find_endwith(path_model, '.json')
+  path_params = find_endwith(path_model, '.json')
   if path_params is not None:
     with open(path_params, 'r') as file_params:
       params = json.load(file_params)
@@ -30,7 +34,7 @@ def __get_params_models(load_model: bool, path_model: str, model_params: T.Dict)
 
   return model_params
 
-def __create_file(path: str, content: T.Any, mode: str = 'w', is_json: bool = False):
+def create_file(path: str, content: T.Any, mode: str = 'w', is_json: bool = False):
   if not os.path.exists(path):
     with open(path, mode) as file:
       if is_json:
@@ -38,35 +42,44 @@ def __create_file(path: str, content: T.Any, mode: str = 'w', is_json: bool = Fa
       else:
         file.write(content)
 
+def NoImplementedError(message: str):
+  raise NotImplementedError(message)
 
 def build(
   model_name: str,
-  path_model: str,
-  builder_function: T.Callable,
-  load_model: bool = False,
+  models_folder: str,
+  run_id: str = None,
   model_params: T.Dict = {},
   compile_params: T.Dict = {},
-  custom_objects: T.Union[T.Dict, None] = {}
+  load_model_params: T.Union[T.Dict, None] = {},
+  builder_function: T.Callable = lambda **kwargs: NoImplementedError('Builder function not implemented')
 ) -> T.Tuple[tf.keras.Model, str, str, str]:
 
-  model_params = __get_params_models(load_model, path_model, model_params)
+  load_model = run_id is not None
+
+  model_params = get_params_models(load_model, models_folder, model_params)
   model_params_str = '_'.join(map(str, model_params.values()))
   model_ident = '_'.join([ model_name, model_params_str ])
+
+  if run_id is None or len(run_id) == 0:
+    run_id = datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
+  path_model = os.path.join(models_folder, model_name, run_id)
   
-  path_model = os.path.join(path_model, model_name)
   if not os.path.exists(path_model):
     os.makedirs(path_model)
   
   if load_model:
-    check_path = __find_endwith(path_model, '.h5')
+    check_path = find_endwith(path_model, '.h5')
+    if check_path is None:
+      raise Exception(f'Model not found at {path_model}')
   else:
     check_path = f'{path_model}/{model_ident}_checkpoint.h5'
 
   os.makedirs(path_model, exist_ok=True)
 
   path_params = f'{path_model}/{model_name}_params.json'
-  
-  __create_file(path_params, model_params, is_json=True)
+
+  create_file(path_params, model_params, is_json=True)
 
   if os.path.isfile(check_path) and load_model:
     found_model = True
@@ -81,15 +94,16 @@ def build(
     gpu_info = ''
 
   info_env = gpu_info[0].name if len(gpu_info) > 0 else 'Not connected to a GPU'
-  print(f'\nGPU info: {info_env}\n')
+  print(f'GPU info: {info_env}\n\n')
 
   if found_model:
-    model = tf.keras.models.load_model(check_path, custom_objects=custom_objects, compile=True)
+    load_model_params['filepath'] = check_path
+    model = tf.keras.models.load_model(**load_model_params)
   else:
     model = builder_function(**model_params)
     model.compile(**compile_params)
 
-  return model, model_ident, check_path, path_model
+  return model, run_id, model_ident, check_path, path_model
 
 
 class NotifierCallback(tf.keras.callbacks.Callback):
@@ -100,6 +114,7 @@ class NotifierCallback(tf.keras.callbacks.Callback):
     chat_id: str = None,
     api_token: str = None,
     webhook_url: str = None,
+    frequency_epoch: int = 1,
   ):
     super().__init__()
     self.notifier = Notifier(
@@ -110,9 +125,13 @@ class NotifierCallback(tf.keras.callbacks.Callback):
       webhook_url=webhook_url
     )
     self.epoch_count = 0
+    self.frequency_epoch = frequency_epoch
 
   def on_epoch_end(self, batch, logs={}):
     self.epoch_count += 1
+    if self.epoch_count % self.frequency_epoch != 0:
+      return
+
     try:
       parsed_metrics = f'Epoch {self.epoch_count}\n'
       for key, value in logs.items():
@@ -123,7 +142,7 @@ class NotifierCallback(tf.keras.callbacks.Callback):
       print('There was an error sending the notification:', e)
 
 
-class __ParamsNotifier(T.TypedDict):
+class ParamsNotifier(T.TypedDict):
   title: T.Optional[str]
   email: T.Optional[str]
   chat_id: T.Optional[str]
@@ -139,13 +158,13 @@ def train(
   batch: int = 32,
   epochs: int = 100,
   initial_epoch: int = 0,
-  callbacks: T.Union[T.List[T.Any], T.Any] = [],
-  params_notifier: __ParamsNotifier = None,
   checkpoint_params: T.Dict = {},
   tensorboard_params: T.Dict = {},
+  params_notifier: ParamsNotifier = None,
+  callbacks: T.Union[T.List[T.Any], T.Any] = [],
 ):
   assert isinstance(train_ds, tf.data.Dataset) and isinstance(val_ds, tf.data.Dataset)
-  
+
   if params_notifier:
     callbacks.append(NotifierCallback(**params_notifier))
 

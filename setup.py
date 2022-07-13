@@ -11,7 +11,7 @@ setuptools.setup(
     description="This library help to create models with identifiers, checkpoints, logs and metadata automatically, in order to make the training process more efficient and traceable.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/enmanuel-mag/ml_workflow",
+    url="https://github.com/enmanuelmag/iaflow",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

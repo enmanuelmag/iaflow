@@ -2,8 +2,10 @@ import os
 import gc
 import json
 import time
+import copy
 import shutil
 import typing as T
+import pickle as pkl
 import tensorflow as tf
 import subprocess as sp
 
@@ -61,20 +63,20 @@ def NoImplementedError(message: str):
 
 class IAFlow(object):
 
-  def __init__(self,
+  def __init__(
+    self,
     models_folder: str,
     builder_function: T.Callable = lambda **kwargs: NoImplementedError('Builder function not implemented'),
-    batch: int = 32,
-    epochs: int = 100,
+    batch: int = None,
+    epochs: int = None,
+    callbacks: T.Union[T.List[T.Any], T.Any] = [],
+    train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
+    val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
     checkpoint_params: T.Dict = {},
     tensorboard_params: T.Dict = {},
     params_notifier: ParamsNotifier = None,
-    callbacks: T.Union[T.List[T.Any], T.Any] = [],
-    val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
-    train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
   ):
     self.models = {}
-    self.callbacks = callbacks
     self.models_folder = models_folder
     self.params_notifier = params_notifier
     self.builder_function = builder_function
@@ -82,8 +84,9 @@ class IAFlow(object):
     self.tensorboard_params = tensorboard_params
     self.batch = batch
     self.epochs = epochs
-    self.val_ds = val_ds
+    self.callbacks = callbacks
     self.train_ds = train_ds
+    self.val_ds = val_ds
 
     self.notifier = NotifierCallback(**params_notifier) if params_notifier else None
 
@@ -128,6 +131,9 @@ class IAFlow(object):
           json.dump(content, file)
         else:
           file.write(content)
+
+  def __get_config(self):
+    pass
 
   def set_builder_function(self, builder_function: T.Callable):
     self.builder_function = builder_function
@@ -179,7 +185,8 @@ class IAFlow(object):
     del model[run_id]
     if len(model) == 0:
       del self.models[model_name]
-    
+
+    self.save()
     print(f'Model {model_name}/{run_id} deleted')
 
   def show_models(self):
@@ -195,18 +202,21 @@ class IAFlow(object):
   def add_model(
     self,
     model_name: str,
+    run_id: str = None,
     model_params: T.Dict = {},
     compile_params: T.Dict = {},
     load_model_params: T.Union[T.Dict, None] = {}
   ) -> T.Tuple[tf.keras.Model, str, str, str]:
 
     models_folder = self.models_folder
-    model_params = self.__get_params_models(False, models_folder, model_params)
     model_params_str = '_'.join(map(str, model_params.values()))
     model_ident = '_'.join([ model_name, model_params_str ])
 
-    
-    run_id = datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
+    runs_model = self.models.get(model_name)
+    if run_id is not None and run_id in runs_model:
+      raise ValueError(f'Model {model_name}/{run_id} already exists')
+
+    run_id = run_id or datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
     path_model = os.path.join(models_folder, model_name, run_id)
 
     if not os.path.exists(path_model):
@@ -242,22 +252,27 @@ class IAFlow(object):
     }
 
     self.models[model_name] = model_data
+    self.save()
+    print(f'Model {model_name}/{run_id} added')
     return model_data[run_id]
 
   def train(
     self,
     model_data: T.Dict,
-    train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
-    val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
     force_creation: bool = False,
     batch: int = 32,
     epochs: int = 100,
-    initial_epoch: int = 0
+    initial_epoch: int = 0,
+    train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
+    val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
   ):
     batch = batch or self.batch
     epochs = epochs or self.epochs
-    val_ds = val_ds or self.val_ds
     train_ds = train_ds or self.train_ds
+    val_ds = val_ds or self.val_ds
+
+    if train_ds is None or val_ds is None:
+      raise ValueError('train_ds and val_ds must be provided on the instance creation or train method call')
 
     model_name = model_data.get('model_name')
     run_id = model_data.get('run_id')
@@ -294,15 +309,19 @@ class IAFlow(object):
     self.clear_session()
     del model
 
-  def save(self, path: str):
-    data = self.models
-    path = path or self.models_folder
+  def save(self):
+    """
+    Future implementation
+    """
+    return
+    path = f'{self.models_folder}/data.iaflow'
 
-    with open(f'{path}/models.json', 'w') as file:
-      json.dump(data, file)
-    print(f'Saved data to {path}/models.json')
+    with open(path, 'wb') as file:
+      print(self.models_folder)
+      pkl.dump(self, file, protocol=pkl.HIGHEST_PROTOCOL)
+
+    print(f'Saved data to {path}')
 
   def clear_session(self):
     clear_session()
     gc.collect()
-

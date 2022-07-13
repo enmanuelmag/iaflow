@@ -3,9 +3,90 @@ This library help to create models with identifiers, checkpoints, logs and metad
 
 ## Requirements
 
+- Tensorflow 2.5 or higher.
+- [notify-function](https://pypi.org/project/notify-function/#description) 1.5.0 or higher.
+
 ## Usage
 
+This library has two main functions:
+ - `build`: to build a model in a defined structure of folder.
+ - `train`: to train a model with a internal callbacks to save metrics with Tensorboard, save the model with checkpoints and send notification to discord channel, email or telegram (all this is optional).
+
+### Build method
+The build method is used to create a model in a defined structure of folder. As below:
+
+`models_folder`
+└─ `model_name`
+   └─ `run_id`
+      ├─ logs                               
+      │  ├─ train
+      │  ├─ validation
+      ├─ `model_name`_`model_params`_checkpoint.h5
+      └─ `model_name`_params.json
+
+
 #### Parameters
+```python
+model, run_id, model_ident, check_path, path_model = mlw.build(
+  model_name='model_dense', # Name of the model
+  models_folder='./models', # Path to folder where models will be saved
+  run_id=None, # Optional run id to load model
+  builder_function=custom_builder, # Function to build your or yours models
+  model_params={ 'input_shape': (2, 1) }, # Parameters for builder function
+  compile_params={ # Parameters for model compilation, see documentation tf.keras.models.compile
+    'optimizer': 'adam', 'loss': 'mse',
+    'metrics': ['accuracy']
+  },
+  load_model_params={} # Parameters for model loading, see documentation of tf.keras.models.load_model
+)
+```
+
+If you want to load a trained model you must send the parameter `run_id`, and you can skip the parameters like: `builder_function`, `model_params` and `compile_params`.
+
+> Note: If your model use custom SubClass for custom Layers you must send the parameter `load_model_params` with the parameter `custom_objects` with the custom class. see documentation of tf.keras.models.load_model
+
+#### Return
+
+- `model`: the model built.
+- `run_id`: the run id of the model.
+- `model_ident`: the model identifier.
+- `check_path`: the path to the checkpoint file.
+- `path_model`: the path to the model file.
+
+
+### Train method
+
+The train method is used to train a model.
+
+#### Parameters
+
+```python
+mlw.train(
+  model=model, # The tf keras model
+  check_path=check_path, # Path to the model checkpoint
+  path_model=path_model, # Path to the model folder
+  train_ds=train_ds, # Training dataset, could be a tf.data.Dataset, a list of tensors or a tensor
+  val_ds=val_ds, # Validation dataset, could be a tf.data.Dataset, a list of tensors or a tensor
+  batch=32, # Batch size
+  epochs=100, # Number of epochs
+  initial_epoch=0, # Initial epoch
+  checkpoint_params={ # Parameters for model checkpoint, see documentation tf.keras.callbacks.ModelCheckpoint
+    'monitor': 'accuracy', 'verbose': 1,
+    'save_best_only': False, 'save_freq':'epoch'
+  },
+  params_notifier={ # Parameters for notifier, see documentation https://pypi.org/project/notify-function/#description
+    'title': 'Training update',
+    'webhook_url': 'https://ptb.discord.com/api/webhooks/996699042266492939/xcshnimJah-Uds6tY6BKh_E5e5OZ_6tUYgxnABrdVH8LyXJE3XNgfZ0OTQLkWMqHuud9',
+    'frequency_epoch': 20 # This will send a notification every 20 epochs, by default it is every epoch
+  }
+)
+```
+
+If you loaded a trained model you should specify the initial epoch. Don't change the paths like `check_path` and `path_model`, because they are already setted properly when you loaded the model with the `build` method. Also don't send the key `filepath` on the `checkpoint_params` because it is already setted properly. inside the method.
+
+If you want use `notify-function` lib you must send the parameter `params_notifier`. To see how to use and what do this library you can see the documentation of [notify-function](https://pypi.org/project/notify-function/#description).
+
+> If you use `notify-function` and you specify email maybe this will add a delay to the training process. To avoid this you can use another methods more faster like discord webhooks or telegram message or instead use the key `frequency_epoch` on the `params_notifier` reduce the rate of notifications.
 
 
 Made with ❤️ by [Enmanuel Magallanes](https://cardor.dev)

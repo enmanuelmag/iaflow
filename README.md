@@ -15,6 +15,7 @@ This library has two main functions:
 ### Build method
 The build method is used to create a model in a defined structure of folder. As below:
 
+```
 `models_folder`
 └─ `model_name`
    └─ `run_id`
@@ -23,6 +24,7 @@ The build method is used to create a model in a defined structure of folder. As 
       │  ├─ validation
       ├─ `model_name`_`model_params`_checkpoint.h5
       └─ `model_name`_params.json
+```
 
 
 #### Parameters

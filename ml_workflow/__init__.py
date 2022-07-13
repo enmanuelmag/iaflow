@@ -167,9 +167,11 @@ def train(
 
   if params_notifier:
     callbacks.append(NotifierCallback(**params_notifier))
-
-  callbacks.append(tf.keras.callbacks.ModelCheckpoint(check_path, **checkpoint_params))
-  callbacks.append(tf.keras.callbacks.TensorBoard(log_dir=f'{path_model}/logs', **tensorboard_params))
+  
+  callbacks.extend([
+    tf.keras.callbacks.ModelCheckpoint(check_path, **checkpoint_params),
+    tf.keras.callbacks.TensorBoard(log_dir=f'{path_model}/logs', **tensorboard_params)
+  ])
 
   use_tf_dataset = False
   if isinstance(train_ds, tf.data.Dataset) and isinstance(val_ds, tf.data.Dataset):

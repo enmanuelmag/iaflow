@@ -69,7 +69,7 @@ If you want to load a trained model you must send the parameter `run_id`, and yo
 This method return a dictionary with information of the model
 
 
-### Train method
+### `train` method
 
 The train method is used to train a model.
 

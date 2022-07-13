@@ -60,7 +60,7 @@ mlw.train(
   },
   params_notifier={ # Parameters for notifier, see documentation https://pypi.org/project/notify-function/#description
     'title': 'Training update',
-    'webhook_url': 'https://ptb.discord.com/api/webhooks/996699042266492939/xcshnimJah-Uds6tY6BKh_E5e5OZ_6tUYgxnABrdVH8LyXJE3XNgfZ0OTQLkWMqHuud9',
+    'webhook_url': os.environ.get('WEBHOOK_URL'),
     'frequency_epoch': 20 # This will send a notification every 20 epochs, by default it is every epoch
   }
 )

@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="ml_workflow",
+    name="iaflow",
     version="1.0.0",
     author="Enmanuel Magallanes Pinargote",
     author_email="enmanuelmag@cardor.dev",

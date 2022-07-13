@@ -1,6 +1,6 @@
 import os
 import tensorflow as tf
-import ml_workflow as mlw
+import iaflow as iaf
 
 
 def custom_builder(input_shape):
@@ -13,7 +13,7 @@ def custom_builder(input_shape):
   return model
 
 
-model, run_id, model_ident, check_path, path_model = mlw.build(
+model, run_id, model_ident, check_path, path_model = iaf.build(
   model_name='model_dense', # Name of the model
   models_folder='./models', # Path to folder where models will be saved
   run_id=None, # Optional run id to load model
@@ -45,7 +45,7 @@ val_ds = all_data.skip(5)
 
 
 
-mlw.train(
+iaf.train(
   model=model, # The tf keras model
   check_path=check_path, # Path to the model checkpoint
   path_model=path_model, # Path to the model folder

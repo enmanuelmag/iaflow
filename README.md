@@ -29,6 +29,20 @@ The build method is used to create a model in a defined structure of folder. As 
 
 #### Parameters
 ```python
+def custom_builder(input_shape) -> tf.keras.Model:
+  """
+  You can define this function to create one or more models.
+  With the parameters send to this function you can create the different models that you want.
+  The function MUST return a model of type `tf.keras.Model`.
+  """
+  model = tf.keras.models.Sequential([
+    tf.keras.layers.Input(input_shape),
+    tf.keras.layers.Dense(units=512, activation='relu'),
+    tf.keras.layers.Dense(units=512, activation='relu'),
+    tf.keras.layers.Dense(units=1, activation='sigmoid')
+  ])
+  return model
+
 model, run_id, model_ident, check_path, path_model = mlw.build(
   model_name='model_dense', # Name of the model
   models_folder='./models', # Path to folder where models will be saved
@@ -90,5 +104,8 @@ If you want use `notify-function` lib you must send the parameter `params_notifi
 
 > If you use `notify-function` and you specify email maybe this will add a delay to the training process. To avoid this you can use another methods more faster like discord webhooks or telegram message or instead use the key `frequency_epoch` on the `params_notifier` reduce the rate of notifications.
 
+## FAQs
+
+If you have any question find a bug or feedback, please contact me with a email to [enmanuelmag@cardor.dev](mailto:enmanuelmag@cardor.dev)
 
 Made with ❤️ by [Enmanuel Magallanes](https://cardor.dev)

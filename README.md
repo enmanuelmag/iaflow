@@ -71,7 +71,7 @@ This method return a dictionary with information of the model
 
 ### `train` method
 
-The train method is used to train a model. This doen't return anything.
+The train method is used to train a model. This doen't return anything. Inside the method the model will be built, compiled and finally begin to train.
 
 #### Parameters
 
@@ -79,7 +79,7 @@ The train method is used to train a model. This doen't return anything.
 ia_maker.train(model_1_data, batch=32, epochs=5)
 ```
 
-If you loaded a trained model you should send a dictionary with key `model_name` and `run_id` that belong to the model desired to load and the initial epoch. Don't change the paths like `check_path` and `path_model`, because they are already setted properly when you loaded the model with the `build` method. Also don't send the key `filepath` on the `checkpoint_params` because it is already setted properly. inside the method.
+If you loaded a trained model you should send a dictionary with key `model_name` and `run_id` that belong to the model desired to load and the initial epoch, also you can send the same dictionary returned when you called `add_model` method.
 
 If you want use `notify-function` lib you must send the parameter `params_notifier`. To see how to use and what do this library you can see the documentation of [notify-function](https://pypi.org/project/notify-function/#description). The message will have the epoch number and the values of each metric that you defined for your model.
 

@@ -54,6 +54,7 @@ The build method is used to create a model in a defined structure of folder. As 
 ```python
 model_1_data = ia_maker.add_model(
   model_name='model_1', # Name of the model
+  run_id='run_1', # Run id of the model, must be unique by model name
   model_params={ 'input_shape': (2, 1) }, # Parameters for builder function
   load_model_params={}, # Parameters for model loading, see documentation of tf.keras.models.load_model
   compile_params={ # Parameters for model compilation, see documentation tf.keras.Models.compile

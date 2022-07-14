@@ -8,9 +8,11 @@ This library help to create models with identifiers, checkpoints, logs and metad
 
 ## Usage
 
-This library has a maser class called `IAFlow`, that has function, the most important are:
+This library has a maser class called `IAFlow`, that has functions to management model creation and training, the most important are:
  - `add_model`: to add a new model to the internal structure of maker models to build later to training.
  - `train`: to train a model with a internal callbacks to save metrics with Tensorboard, save the model with checkpoints and send notification to discord channel, email or telegram (all this is optional).
+ - `show_models`: to show the models that are in the internal structure of maker models.
+ - `delete_model`: to delete a model from the internal structure of maker models.
 
 ### Constructor
 
@@ -61,8 +63,6 @@ model_1_data = ia_maker.add_model(
 )
 ```
 
-If you want to load a trained model you must send the parameter `run_id`, and you can skip the parameters like: `builder_function`, `model_params` and `compile_params`.
-
 > Note: If your model use custom SubClass for custom Layers you must send the parameter `load_model_params` with the parameter `custom_objects` with the custom class. see documentation of tf.keras.models.load_model
 
 #### Return
@@ -71,7 +71,7 @@ This method return a dictionary with information of the model
 
 ### `train` method
 
-The train method is used to train a model.
+The train method is used to train a model. This doen't return anything.
 
 #### Parameters
 
@@ -87,13 +87,13 @@ If you want use `notify-function` lib you must send the parameter `params_notifi
 <img src="assets/message.png" alt="Message example" width="300"/>
 
 
-> If you use `notify-function` and you specify email maybe this will add a delay to the training process. To avoid this you can use another methods more faster like discord webhooks or telegram message or instead use the key `frequency_epoch` on the `params_notifier` reduce the rate of notifications.
+> If you use `notify-function` and you specify email maybe this will add a delay to the training process if your time per step is so fast. To avoid this you can use another methods more faster like discord webhooks or telegram message or instead use the key `frequency_epoch` on the `params_notifier` reduce the rate of notifications.
 
 ### `show_models` method
-This function show all models that you have added to the IAFlow.
+This function show all models that you have added to the IAFlow by a print.
 
 ### `delete_model` method
-This function delete a model from the IAFlow. You must send a dictionary with key `model_name` and `run_id` that belong to the model desired to delete. If you send the parameter `delete_folder` it will delete the folder of the model.
+This function delete a model from the IAFlow. You must send a dictionary with key `model_name` and `run_id` that belong to the model desired to delete. If you send the parameter `delete_folder` it will also delete the folder of the model.
 
 ## FAQs
 

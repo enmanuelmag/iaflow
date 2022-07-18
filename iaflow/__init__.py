@@ -67,26 +67,19 @@ class IAFlow(object):
     self,
     models_folder: str,
     builder_function: T.Callable = lambda **kwargs: NoImplementedError('Builder function not implemented'),
-    batch: int = None,
-    epochs: int = None,
     callbacks: T.Union[T.List[T.Any], T.Any] = [],
-    train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
-    val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
     checkpoint_params: T.Dict = {},
     tensorboard_params: T.Dict = {},
     params_notifier: ParamsNotifier = None,
   ):
     self.models = {}
+    self.datasets = {}
+    self.callbacks = callbacks
     self.models_folder = models_folder
     self.params_notifier = params_notifier
     self.builder_function = builder_function
     self.checkpoint_params = checkpoint_params
     self.tensorboard_params = tensorboard_params
-    self.batch = batch
-    self.epochs = epochs
-    self.callbacks = callbacks
-    self.train_ds = train_ds
-    self.val_ds = val_ds
 
     self.notifier = NotifierCallback(**params_notifier) if params_notifier else None
 
@@ -165,30 +158,6 @@ class IAFlow(object):
 
     return model, run_id_data
 
-  def delete_model(self, model_data: T.Dict, delete_folder: bool = False):
-    model_name = model_data.get('model_name')
-    run_id = model_data.get('run_id')
-  
-    model = self.models.get(model_name)
-    if model is None:
-      print(f'Model {model_name} not found')
-      return None
-    
-    run_id_data = model.get(run_id)
-    if run_id_data is None:
-      print(f'Run {run_id} not found')
-      return None
-
-    if delete_folder:
-      self.__delete_by_path(run_id_data.get('path_model'), is_dir=True)
-    
-    del model[run_id]
-    if len(model) == 0:
-      del self.models[model_name]
-
-    self.save()
-    print(f'Model {model_name}/{run_id} deleted')
-
   def show_models(self):
     print('Models:')
     for model_name, model in self.models.items():
@@ -198,6 +167,72 @@ class IAFlow(object):
         for key, value in run_id_data.items():
           if key not in SLIP_KEYS:
             print(f'      {key}: {value}')
+
+  def add_dataset(
+    self,
+    name: str,
+    epochs: int,
+    train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any],
+    batch_size: int = None,
+    shuffle_buffer: int = None,
+    val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
+    test_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None
+  ):
+    if name in self.datasets:
+      print(f'Dataset {name} already exists')
+      return False
+
+    self.datasets[name] = {
+      'train_ds': train_ds,
+      'epochs': epochs,
+      'batch_size': batch_size,
+      'shuffle_buffer': shuffle_buffer,
+    }
+    if val_ds is not None:
+      self.datasets[name]['val_ds'] = val_ds
+    if test_ds is not None:
+      self.datasets[name]['test_ds'] = test_ds
+
+    print(f'Dataset {name} added')
+    return True
+
+  def update_dataset(
+    self,
+    name: str = None,
+    epochs: int = None,
+    batch_size: int = None,
+    shuffle_buffer: int = None,
+    train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
+    val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
+    test_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None
+  ):
+    if name not in self.datasets:
+      print(f'Dataset {name} not found')
+      return False
+
+    if batch_size is not None:
+      self.datasets[name]['batch_size'] = batch_size
+    if shuffle_buffer is not None:
+      self.datasets[name]['shuffle_buffer'] = shuffle_buffer
+    if epochs is not None:
+      self.datasets[name]['epochs'] = epochs
+    if train_ds is not None:
+      self.datasets[name]['train_ds'] = train_ds
+    if val_ds is not None:
+      self.datasets[name]['val_ds'] = val_ds
+    if test_ds is not None:
+      self.datasets[name]['test_ds'] = test_ds
+
+    print(f'Dataset {name} updated')
+    return True
+
+  def delete_dataset(self, name: str):
+    if name not in self.datasets:
+      print(f'Dataset {name} not found')
+      return False
+
+    del self.datasets[name]
+    return True
 
   def add_model(
     self,
@@ -256,20 +291,80 @@ class IAFlow(object):
     print(f'Model {model_name}/{run_id} added')
     return model_data[run_id]
 
+  def update_model(
+    self,
+    model_name: str,
+    run_id: str,
+    model_params: T.Dict = {},
+    compile_params: T.Dict = {},
+    load_model_params: T.Union[T.Dict, None] = {}
+  ) -> T.Tuple[tf.keras.Model, str, str, str]:
+
+    models_folder = self.models_folder
+    model_params_str = '_'.join(map(str, model_params.values()))
+    model_ident = '_'.join([ model_name, model_params_str ])
+
+    model_data = self.models.get(model_name, {})
+    if run_id not in model_data:
+      raise ValueError(f'Model {model_name}/{run_id} not found')
+
+    model = runs_model[run_id]
+
+    if model_params is not None:
+      model['model_params'] = model_params
+    if compile_params is not None:
+      model['compile_params'] = compile_params
+    if load_model_params is not None:
+      model['load_model_params'] = load_model_params
+
+    model_data[run_id] = model
+    self.models[model_name] = model_data
+    print(f'Model {model_name}/{run_id} updated')
+    return model_data[run_id]
+
+  def delete_model(self, model_data: T.Dict, delete_folder: bool = False):
+    model_name = model_data.get('model_name')
+    run_id = model_data.get('run_id')
+  
+    model = self.models.get(model_name)
+    if model is None:
+      print(f'Model {model_name} not found')
+      return False
+    
+    run_id_data = model.get(run_id)
+    if run_id_data is None:
+      print(f'Run {run_id} not found')
+      return False
+
+    if delete_folder:
+      self.__delete_by_path(run_id_data.get('path_model'), is_dir=True)
+    
+    del model[run_id]
+    if len(model) == 0:
+      del self.models[model_name]
+
+    self.save()
+    print(f'Model {model_name}/{run_id} deleted')
+    return True
+
   def train(
     self,
     model_data: T.Dict,
-    force_creation: bool = False,
-    batch: int = 32,
+    dataset_name: str,
     epochs: int = 100,
+    batch_size: int = 32,
     initial_epoch: int = 0,
+    shuffle_buffer: int = None,
+    force_creation: bool = False,
     train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
     val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
   ):
-    batch = batch or self.batch
-    epochs = epochs or self.epochs
-    train_ds = train_ds or self.train_ds
-    val_ds = val_ds or self.val_ds
+    epochs = epochs or self.datasets.get(dataset_name, {}).get('epochs', 100)
+    batch_size = batch_size or self.datasets.get(dataset_name, {}).get('batch_size', None)
+    shuffle_buffer = shuffle_buffer or self.datasets.get(dataset_name, {}).get('shuffle_buffer', None)
+
+    val_ds = val_ds or self.datasets.get(dataset_name, {}).get('val_ds')
+    train_ds = train_ds or self.datasets.get(dataset_name, {}).get('train_ds')
 
     if train_ds is None or val_ds is None:
       raise ValueError('train_ds and val_ds must be provided on the instance creation or train method call')
@@ -289,11 +384,15 @@ class IAFlow(object):
     self.tensorboard_params['log_dir'] = run_data.get('log_dir')
     self.callbacks.append(tf.keras.callbacks.TensorBoard(**self.tensorboard_params))
 
-    use_tf_dataset = False
-    if isinstance(train_ds, tf.data.Dataset) and isinstance(val_ds, tf.data.Dataset):
+    use_tf_dataset = isinstance(train_ds, tf.data.Dataset) and isinstance(val_ds, tf.data.Dataset)
+    if batch_size is not None and isinstance(train_ds, tf.data.Dataset) and isinstance(val_ds, tf.data.Dataset):
       use_tf_dataset = True
-      train_ds = train_ds.batch(batch)
-      val_ds = val_ds.batch(batch)
+      train_ds = train_ds.batch(batch_size)
+      val_ds = val_ds.batch(batch_size)
+
+    if shuffle_buffer is not None and use_tf_dataset:
+      train_ds = train_ds.shuffle(shuffle_buffer)
+      val_ds = val_ds.shuffle(shuffle_buffer)
 
     start_time = time.time()
     model.fit(
@@ -302,7 +401,7 @@ class IAFlow(object):
       callbacks=self.callbacks,
       validation_data=val_ds,
       initial_epoch=initial_epoch,
-      batch_size=batch if not use_tf_dataset else None,
+      batch_size=batch_size if not use_tf_dataset else None,
     )
     print(f'Training time: {time.time() - start_time}')
 

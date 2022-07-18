@@ -37,6 +37,20 @@ ia_maker = IAFlow(
 )
 ```
 
+## `add_dataset`
+This function add a new dataset to the internal structure of maker models to build later to training.
+
+```python
+ia_maker.add_dataset(
+  name='dataset_1', # Name of the dataset
+  epochs=10, # Number of epochs to train the model with this dataset
+  batch_size=32, # Batch size to train the model with this dataset
+  shuffle_buffer=512, # Buffer size to shuffle the dataset when training with this dataset
+  train_ds=train_ds, # Dataset to train the model, you can change this when call `train` method
+  val_ds=val_ds # Dataset to validate the model, you can change this when call `train` method
+)
+```
+
 ### `add_model` method
 The build method is used to create a model in a defined structure of folder. As below:
 

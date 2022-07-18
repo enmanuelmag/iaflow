@@ -14,6 +14,8 @@ This library has a maser class called `IAFlow`, that has functions to management
  - `show_models`: to show the models that are in the internal structure of maker models.
  - `delete_model`: to delete a model from the internal structure of maker models.
 
+There are more methods to complete a CRUD for models and datasets. You can check it once you create a instance of `IAFlow`. For now, you could check a brief description of most important methods below.
+
 ### Constructor
 
 ```python
@@ -28,9 +30,13 @@ def custom_builder(input_shape):
   ])
   return model
 
+params_notifier = { # Parameters for notifier, see documentation https://pypi.org/project/notify-function/#description
+  'title': 'Training update',
+  'webhook_url': os.environ.get('WEBHOOK_URL'),
+  'frequency_epoch': 20 # This will send a notification every 20 epochs, by default it is every epoch
+}
+
 ia_maker = IAFlow(
-  val_ds=val_ds, # Dataset to validate the model, you can change this when call `train` method
-  train_ds=train_ds, # Dataset to train the model, you can change this when call `train` method
   models_folder='./models', # Folder to save the models
   params_notifier=params_notifier, # Notifier to send notification to discord channel, email or telegram (all this is optional)
   builder_function=custom_builder # Function to build the model, you can change this when call `train` method
@@ -38,7 +44,7 @@ ia_maker = IAFlow(
 ```
 
 ## `add_dataset`
-This function add a new dataset to the internal structure of maker models to build later to training.
+This function add a new dataset to the internal structure of maker models to build later to training. The dataset could be an instance of `tf.data.Dataset`, list of Tensors of whatever that could be passes to the `fit` method of `tf.keras.Model`.
 
 ```python
 ia_maker.add_dataset(
@@ -50,6 +56,8 @@ ia_maker.add_dataset(
   val_ds=val_ds # Dataset to validate the model, you can change this when call `train` method
 )
 ```
+
+> So far, the shuffle buffer is only applied to datasets that are an instance of `tf.data.Dataset`.
 
 ### `add_model` method
 The build method is used to create a model in a defined structure of folder. As below:

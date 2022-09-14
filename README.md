@@ -1,4 +1,4 @@
-# IA Workflow
+# IAfLow
 This library help to create models with identifiers, checkpoints, logs and metadata automatically, in order to make the training process more efficient and traceable.
 
 ## Requirements

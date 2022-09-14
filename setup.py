@@ -1,11 +1,14 @@
+import json
 import setuptools
+
+version = json.load(open('package.json')).get('version')
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="iaflow",
-    version="2.1.1",
+    version=version,
     author="Enmanuel Magallanes Pinargote",
     author_email="enmanuelmag@cardor.dev",
     description="This library help to create models with identifiers, checkpoints, logs and metadata automatically, in order to make the training process more efficient and traceable.",
@@ -19,7 +22,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
+        'requests',
         'tensorflow',
+        'discord_webhook',
         'notifier-function'
     ],
     python_requires='>=3.6',

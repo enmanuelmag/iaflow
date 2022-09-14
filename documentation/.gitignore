@@ -1,17 +1,3 @@
-.DS_Store
-
-/build/
-
-/models/
-
-/tests/
-
-/.vscode/
-
-/dist/
-
-__pycache__/
-
 # Dependencies
 /node_modules
 

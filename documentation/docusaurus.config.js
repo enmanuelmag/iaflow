@@ -10,7 +10,7 @@ const siteName = 'IAflow';
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: siteName,
-  tagline: 'Library to manage the flow of your training',
+  tagline: 'Library to manage the flow of your IA training',
   url: 'https://iaflow.cardor.dev',
   baseUrl: '/',
   onBrokenLinks: 'throw',

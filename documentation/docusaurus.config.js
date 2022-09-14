@@ -4,7 +4,10 @@
 const lightCodeTheme = require('prism-react-renderer/themes/github');
 const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
-const siteName = 'IAflow'
+const siteName = 'IAflow';
+const { current } = require('../version.json');
+console.log('current version', current);
+
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -35,22 +38,28 @@ const config = {
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
+          versions: {
+            current: {
+              label: `Experimental  🚧`,
+              banner: 'unreleased'
+            }
+          },
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+          /* editUrl:
+            'https://github.com/enmanuelmag/iaflow/documentation/', */
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+          /* editUrl:
+            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/', */
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
-        },
+        }
       }),
     ],
   ],
@@ -66,6 +75,10 @@ const config = {
         },
         items: [
           {
+            type: 'docsVersionDropdown',
+            position: 'right',
+          },
+          {
             type: 'doc',
             docId: 'intro',
             position: 'left',
@@ -73,7 +86,7 @@ const config = {
           },
           {to: '/blog', label: 'Blog', position: 'left'},
           {
-            href: 'https://github.com/facebook/docusaurus',
+            href: 'https://github.com/enmanuelmag/iaflow',
             label: 'GitHub',
             position: 'right',
           },
@@ -91,7 +104,7 @@ const config = {
               },
             ],
           },
-          {
+          /* {
             title: 'Community',
             items: [
               {
@@ -107,7 +120,7 @@ const config = {
                 href: 'https://twitter.com/docusaurus',
               },
             ],
-          },
+          }, */
           {
             title: 'More',
             items: [

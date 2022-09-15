@@ -7,6 +7,8 @@ import HomepageFeatures from '@site/src/components/HomepageFeatures';
 
 import styles from './index.module.css';
 
+import './index.module.css';
+
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
   return (
@@ -18,7 +20,7 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to="/docs/intro">
-            Docusaurus Tutorial - 5min ⏱️
+            Tutorial - 5min ⏱️
           </Link>
         </div>
       </div>
@@ -33,7 +35,7 @@ export default function Home() {
       title={`Hello from ${siteConfig.title}`}
       description="Library to manage the flow of your IA training">
       <HomepageHeader />
-      <main>
+      <main className={styles.mainContainer}>
         <HomepageFeatures />
       </main>
     </Layout>

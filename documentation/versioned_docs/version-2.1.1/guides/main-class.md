@@ -54,20 +54,20 @@ ia_maker = IAFlow(
 
 ## Update builder function
 
-The `update_builder_function` method is used to update the builder function. Has the following parameters:
+The `set_builder_function` method is used to update the builder function. Has the following parameters:
 
 - **builder_function**: New function to build the model.
 
 ```python title=Example
-ia_maker.update_builder_function(custom_builder_2)
+ia_maker.set_builder_function(custom_builder_2)
 ```
 
 ## Update notifier parameters
 
-The `update_notifier_parameters` method is used to update the notifier parameters. Has the following parameters:
+The `set_notifier_parameters` method is used to update the notifier parameters. Has the following parameters:
 
 - **params_notifier**: New parameters for notifier, see documentation [here](https://pypi.org/project/notify-function/#description).
 
 ```python title=Example
-ia_maker.update_notifier_parameters(params_notifier_2)
+ia_maker.set_notifier_parameters(params_notifier_2)
 ```

@@ -130,6 +130,10 @@ class IAFlow(object):
 
   def set_builder_function(self, builder_function: T.Callable):
     self.builder_function = builder_function
+  
+  def set_notifier_parameters(self, params: ParamsNotifier):
+    self.params_notifier = params
+    self.notifier = NotifierCallback(**params)
 
   def get_model(self, model_name: str, run_id: str, force_creation: bool = True):
     

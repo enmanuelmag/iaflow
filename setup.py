@@ -1,14 +1,12 @@
 import json
 import setuptools
 
-version = json.load(open('./version.json')).get('current')
-
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="iaflow",
-    version=version,
+    version='2.1.2',
     author="Enmanuel Magallanes Pinargote",
     author_email="enmanuelmag@cardor.dev",
     description="This library help to create models with identifiers, checkpoints, logs and metadata automatically, in order to make the training process more efficient and traceable.",

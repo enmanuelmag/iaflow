@@ -1,7 +1,7 @@
 import json
 import setuptools
 
-version = json.load(open('package.json')).get('version')
+version = json.load(open('./version.json')).get('current')
 
 with open("README.md", "r") as fh:
     long_description = fh.read()

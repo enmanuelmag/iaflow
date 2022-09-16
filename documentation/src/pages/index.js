@@ -1,6 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import Link from '@docusaurus/Link';
+import Head from '@docusaurus/Head';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
@@ -34,6 +35,9 @@ export default function Home() {
     <Layout
       title={`Hello from ${siteConfig.title}`}
       description="Library to manage the flow of your IA training">
+      <Head>
+        <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0885fab9896c4c1fbc16e5cc5104885d"}'></script>
+      </Head>
       <HomepageHeader />
       <main className={styles.mainContainer}>
         <HomepageFeatures />

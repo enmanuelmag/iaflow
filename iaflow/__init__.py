@@ -83,6 +83,14 @@ class IAFlow(object):
 
     self.notifier = NotifierCallback(**params_notifier) if params_notifier else None
 
+    try:
+      gpu_info = tf.config.experimental.list_physical_devices('GPU')
+    except:
+      gpu_info = ''
+
+    info_env = f'GPU connected: {gpu_info}' if len(gpu_info) > 0 else 'Not connected to a GPU'
+    print(f'GPU info: {info_env}')
+
   def __delete_by_path(self, path: str, is_dir: bool = False):
     if is_dir:
       shutil.rmtree(path, ignore_errors=True)
@@ -150,12 +158,15 @@ class IAFlow(object):
     check_path = run_id_data.get('check_path')
     if os.path.exists(check_path) and not force_creation:
       print(f'Loading model from {check_path}')
-      model = tf.keras.models.load_model(**run_id_data.get('load_model_params'))
-    else:
+      filepath = run_id_data.get('filepath').replace('/', os.path.sep)
+      run_id_data.pop('filepath')
+      model = tf.keras.models.load_model(filepath, **run_id_data.get('load_model_params'))
+      return model, run_id_data
+    elif force_creation:
       print(f'Force creation is {force_creation}. Deleting old logs and model')
       self.__delete_by_path(run_id_data.get('log_dir'), is_dir=True)
       self.__delete_by_path(run_id_data.get('check_path'), is_dir=False)
-      
+
       print('Creating model')
       model = self.builder_function(**run_id_data.get('model_params'))
       model.compile(**run_id_data.get('compile_params'))
@@ -197,7 +208,7 @@ class IAFlow(object):
     if test_ds is not None:
       self.datasets[name]['test_ds'] = test_ds
 
-    print(f'Dataset {name} added')
+    print(f'Dataset {name} was added')
     return True
 
   def update_dataset(
@@ -227,7 +238,7 @@ class IAFlow(object):
     if test_ds is not None:
       self.datasets[name]['test_ds'] = test_ds
 
-    print(f'Dataset {name} updated')
+    print(f'Dataset {name} was updated')
     return True
 
   def delete_dataset(self, name: str):
@@ -236,6 +247,7 @@ class IAFlow(object):
       return False
 
     del self.datasets[name]
+    print(f'Dataset {name} was deleted')
     return True
 
   def add_model(
@@ -267,16 +279,8 @@ class IAFlow(object):
     path_params = f'{path_model}/{model_name}_params.json'
     self.__create_file(path_params, model_params, is_json=True)
 
-    try:
-      gpu_info = tf.config.experimental.list_physical_devices('GPU')
-    except:
-      gpu_info = ''
-
-    info_env = gpu_info[0].name if len(gpu_info) > 0 else 'Not connected to a GPU'
-    print(f'GPU info: {info_env}\n\n')
-
     model_data = self.models.get(model_name, {})
-    
+
     load_model_params['filepath'] = check_path
     model_data[run_id] = {
       'run_id': run_id,
@@ -292,7 +296,7 @@ class IAFlow(object):
 
     self.models[model_name] = model_data
     self.save()
-    print(f'Model {model_name}/{run_id} added')
+    print(f'Model {model_name}/{run_id} was added')
     return model_data[run_id]
 
   def update_model(
@@ -323,7 +327,7 @@ class IAFlow(object):
 
     model_data[run_id] = model
     self.models[model_name] = model_data
-    print(f'Model {model_name}/{run_id} updated')
+    print(f'Model {model_name}/{run_id} was updated')
     return model_data[run_id]
 
   def delete_model(self, model_data: T.Dict, delete_folder: bool = False):
@@ -348,18 +352,18 @@ class IAFlow(object):
       del self.models[model_name]
 
     self.save()
-    print(f'Model {model_name}/{run_id} deleted')
+    print(f'Model {model_name}/{run_id} was deleted')
     return True
 
   def train(
     self,
     model_data: T.Dict,
     dataset_name: str,
-    epochs: int = 100,
     batch_size: int = 32,
     initial_epoch: int = 0,
     shuffle_buffer: int = None,
     force_creation: bool = False,
+    epochs: T.Union[int, None] = None,
     train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
     val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
   ):
@@ -399,6 +403,12 @@ class IAFlow(object):
       val_ds = val_ds.shuffle(shuffle_buffer)
 
     start_time = time.time()
+    print(f'Training {model_name}/{run_id}...')
+    print(f'Epochs: {epochs}')
+    print(f'Batch size: {batch_size}')
+    print(f'Shuffle buffer: {shuffle_buffer}')
+    print(f'Start time: {time.strftime("%Y-%m-%d %H:%M:%S")}')
+
     model.fit(
       train_ds,
       epochs=epochs,

@@ -158,9 +158,11 @@ class IAFlow(object):
     check_path = run_id_data.get('check_path')
     if os.path.exists(check_path) and not force_creation:
       print(f'Loading model from {check_path}')
-      filepath = run_id_data.get('filepath').replace('/', os.path.sep)
-      run_id_data.pop('filepath')
-      model = tf.keras.models.load_model(filepath, **run_id_data.get('load_model_params'))
+      params = {
+        **run_id_data.get('load_model_params', {}),
+        'filepath': check_path,
+      }
+      model = tf.keras.models.load_model(**params)
       return model, run_id_data
     elif force_creation:
       print(f'Force creation is {force_creation}. Deleting old logs and model')
@@ -195,7 +197,6 @@ class IAFlow(object):
   ):
     if name in self.datasets:
       print(f'Dataset {name} already exists')
-      return False
 
     self.datasets[name] = {
       'train_ds': train_ds,
@@ -209,7 +210,6 @@ class IAFlow(object):
       self.datasets[name]['test_ds'] = test_ds
 
     print(f'Dataset {name} was added')
-    return True
 
   def update_dataset(
     self,
@@ -223,7 +223,6 @@ class IAFlow(object):
   ):
     if name not in self.datasets:
       print(f'Dataset {name} not found')
-      return False
 
     if batch_size is not None:
       self.datasets[name]['batch_size'] = batch_size
@@ -239,16 +238,13 @@ class IAFlow(object):
       self.datasets[name]['test_ds'] = test_ds
 
     print(f'Dataset {name} was updated')
-    return True
 
   def delete_dataset(self, name: str):
     if name not in self.datasets:
       print(f'Dataset {name} not found')
-      return False
 
     del self.datasets[name]
     print(f'Dataset {name} was deleted')
-    return True
 
   def add_model(
     self,
@@ -263,7 +259,7 @@ class IAFlow(object):
     model_params_str = '_'.join(map(str, model_params.values()))
     model_ident = '_'.join([ model_name, model_params_str ])
 
-    runs_model = self.models.get(model_name)
+    runs_model = self.models.get(model_name, {})
     if run_id is not None and run_id in runs_model:
       raise ValueError(f'Model {model_name}/{run_id} already exists')
 
@@ -337,12 +333,10 @@ class IAFlow(object):
     model = self.models.get(model_name)
     if model is None:
       print(f'Model {model_name} not found')
-      return False
     
     run_id_data = model.get(run_id)
     if run_id_data is None:
       print(f'Run {run_id} not found')
-      return False
 
     if delete_folder:
       self.__delete_by_path(run_id_data.get('path_model'), is_dir=True)
@@ -353,13 +347,12 @@ class IAFlow(object):
 
     self.save()
     print(f'Model {model_name}/{run_id} was deleted')
-    return True
 
   def train(
     self,
     model_data: T.Dict,
     dataset_name: str,
-    batch_size: int = 32,
+    batch_size: int = None,
     initial_epoch: int = 0,
     shuffle_buffer: int = None,
     force_creation: bool = False,
@@ -381,6 +374,12 @@ class IAFlow(object):
     run_id = model_data.get('run_id')
 
     self.clear_session()
+    print(f'Training {model_name}/{run_id}...')
+    print(f'Epochs: {epochs}')
+    print(f'Batch size: {batch_size}')
+    print(f'Shuffle buffer: {shuffle_buffer}')
+    print(f'Start time: {time.strftime("%Y-%m-%d %H:%M:%S")}')
+    
     model, run_data = self.get_model(model_name, run_id, force_creation)
 
     if self.notifier:
@@ -403,11 +402,6 @@ class IAFlow(object):
       val_ds = val_ds.shuffle(shuffle_buffer)
 
     start_time = time.time()
-    print(f'Training {model_name}/{run_id}...')
-    print(f'Epochs: {epochs}')
-    print(f'Batch size: {batch_size}')
-    print(f'Shuffle buffer: {shuffle_buffer}')
-    print(f'Start time: {time.strftime("%Y-%m-%d %H:%M:%S")}')
 
     model.fit(
       train_ds,

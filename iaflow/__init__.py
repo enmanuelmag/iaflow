@@ -4,7 +4,6 @@ import json
 import time
 import copy
 import shutil
-import typing as T
 import pickle as pkl
 import tensorflow as tf
 import subprocess as sp
@@ -38,7 +37,7 @@ class NotifierCallback(tf.keras.callbacks.Callback):
 
   def on_epoch_end(self, batch, logs={}):
     self.epoch_count += 1
-    if self.epoch_count % self.frequency_epoch != 0:
+    if self.epoch_count % self.frequency_epoch != 0 or self.epoch_count == 0:
       return
 
     try:
@@ -50,13 +49,6 @@ class NotifierCallback(tf.keras.callbacks.Callback):
     except Exception as e:
       print('There was an error sending the notification:', e)
 
-class ParamsNotifier(T.TypedDict):
-  title: T.Optional[str]
-  email: T.Optional[str]
-  chat_id: T.Optional[str]
-  api_token: T.Optional[str]
-  webhook_url: T.Optional[str]
-
 def NoImplementedError(message: str):
   raise NotImplementedError(message)
 
@@ -66,11 +58,11 @@ class IAFlow(object):
   def __init__(
     self,
     models_folder: str,
-    builder_function: T.Callable = lambda **kwargs: NoImplementedError('Builder function not implemented'),
-    callbacks: T.Union[T.List[T.Any], T.Any] = [],
-    checkpoint_params: T.Dict = {},
-    tensorboard_params: T.Dict = {},
-    params_notifier: ParamsNotifier = None,
+    builder_function = lambda **kwargs: NoImplementedError('Builder function not implemented'),
+    callbacks = [],
+    checkpoint_params = {},
+    tensorboard_params = {},
+    params_notifier = None,
   ):
     self.models = {}
     self.datasets = {}
@@ -110,7 +102,7 @@ class IAFlow(object):
         return os.path.join(path, filename)
     return None
 
-  def __get_params_models(self, load_model: bool, path_model: str, model_params: T.Dict):
+  def __get_params_models(self, load_model: bool, path_model: str, model_params):
     if not load_model:
       return model_params
     
@@ -125,7 +117,7 @@ class IAFlow(object):
 
     return model_params
 
-  def __create_file(self, path: str, content: T.Any, mode: str = 'w', is_json: bool = False):
+  def __create_file(self, path: str, content, mode: str = 'w', is_json: bool = False):
     if not os.path.exists(path):
       with open(path, mode) as file:
         if is_json:
@@ -136,7 +128,7 @@ class IAFlow(object):
   def __get_config(self):
     pass
 
-  def set_builder_function(self, builder_function: T.Callable):
+  def set_builder_function(self, builder_function):
     self.builder_function = builder_function
   
   def set_notifier_parameters(self, params: ParamsNotifier):
@@ -189,11 +181,11 @@ class IAFlow(object):
     self,
     name: str,
     epochs: int,
-    train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any],
+    train_ds,
     batch_size: int = None,
     shuffle_buffer: int = None,
-    val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
-    test_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None
+    val_ds = None,
+    test_ds = None
   ):
     if name in self.datasets:
       print(f'Dataset {name} already exists')
@@ -217,9 +209,9 @@ class IAFlow(object):
     epochs: int = None,
     batch_size: int = None,
     shuffle_buffer: int = None,
-    train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
-    val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
-    test_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None
+    train_ds = None,
+    val_ds = None,
+    test_ds = None
   ):
     if name not in self.datasets:
       print(f'Dataset {name} not found')
@@ -250,10 +242,10 @@ class IAFlow(object):
     self,
     model_name: str,
     run_id: str = None,
-    model_params: T.Dict = {},
-    compile_params: T.Dict = {},
-    load_model_params: T.Union[T.Dict, None] = {}
-  ) -> T.Tuple[tf.keras.Model, str, str, str]:
+    model_params = {},
+    compile_params = {},
+    load_model_params = {}
+  ):
 
     models_folder = self.models_folder
     model_params_str = '_'.join(map(str, model_params.values()))
@@ -299,10 +291,10 @@ class IAFlow(object):
     self,
     model_name: str,
     run_id: str,
-    model_params: T.Dict = {},
-    compile_params: T.Dict = {},
-    load_model_params: T.Union[T.Dict, None] = {}
-  ) -> T.Tuple[tf.keras.Model, str, str, str]:
+    model_params = {},
+    compile_params = {},
+    load_model_params = {}
+  ):
 
     models_folder = self.models_folder
     model_params_str = '_'.join(map(str, model_params.values()))
@@ -326,7 +318,7 @@ class IAFlow(object):
     print(f'Model {model_name}/{run_id} was updated')
     return model_data[run_id]
 
-  def delete_model(self, model_data: T.Dict, delete_folder: bool = False):
+  def delete_model(self, model_data, delete_folder: bool = False):
     model_name = model_data.get('model_name')
     run_id = model_data.get('run_id')
   
@@ -350,15 +342,15 @@ class IAFlow(object):
 
   def train(
     self,
-    model_data: T.Dict,
+    model_data,
     dataset_name: str,
     batch_size: int = None,
     initial_epoch: int = 0,
     shuffle_buffer: int = None,
     force_creation: bool = False,
-    epochs: T.Union[int, None] = None,
-    train_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
-    val_ds: T.Union[tf.data.Dataset, T.List[T.Any], T.Any] = None,
+    epochs = None,
+    train_ds = None,
+    val_ds = None,
   ):
     epochs = epochs or self.datasets.get(dataset_name, {}).get('epochs', 100)
     batch_size = batch_size or self.datasets.get(dataset_name, {}).get('batch_size', None)

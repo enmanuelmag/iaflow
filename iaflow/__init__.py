@@ -131,7 +131,7 @@ class IAFlow(object):
   def set_builder_function(self, builder_function):
     self.builder_function = builder_function
   
-  def set_notifier_parameters(self, params: ParamsNotifier):
+  def set_notifier_parameters(self, params):
     self.params_notifier = params
     self.notifier = NotifierCallback(**params)
 

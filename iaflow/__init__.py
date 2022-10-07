@@ -395,7 +395,7 @@ class IAFlow(object):
 
     start_time = time.time()
 
-    model.fit(
+    history = model.fit(
       train_ds,
       epochs=epochs,
       callbacks=self.callbacks,
@@ -404,9 +404,8 @@ class IAFlow(object):
       batch_size=batch_size if not use_tf_dataset else None,
     )
     print(f'Training time: {time.time() - start_time}')
-
     self.clear_session()
-    del model
+    return history
 
   def save(self):
     """

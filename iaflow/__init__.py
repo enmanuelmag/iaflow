@@ -405,6 +405,9 @@ class IAFlow(object):
     )
     print(f'Training time: {time.time() - start_time}')
     self.clear_session()
+    history_path = f'{self.models_folder}/{model_name}/{run_id}/history.pkl'
+    with open(history_path, 'wb') as f:
+       pkl.dump(history, f)
     return history
 
   def save(self):

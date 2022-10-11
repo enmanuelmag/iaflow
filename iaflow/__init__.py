@@ -405,6 +405,8 @@ class IAFlow(object):
     )
     print(f'Training time: {time.time() - start_time}')
     self.clear_session()
+
+    self.plot_history(history, f"{run_data.get('path_model', '.')}/history.png")
     history_path = f'{self.models_folder}/{model_name}/{run_id}/history.pkl'
     with open(history_path, 'wb') as f:
        pkl.dump(history, f)
@@ -426,3 +428,59 @@ class IAFlow(object):
   def clear_session(self):
     clear_session()
     gc.collect()
+
+  def plot_history(self, history, path):
+    train_loss = history.history['loss']
+    train_acc = history.history['accuracy']
+    val_loss = history.history['val_loss']
+    val_acc = history.history['val_accuracy']
+
+    results = {
+      'train_loss': float('inf'),
+      'train_acc': float('-inf'),
+      'val_loss': float('inf'),
+      'val_acc': float('-inf')
+    }
+
+    for idx in range(len(train_loss)):
+      results['train_loss'] = train_loss[idx] if train_loss[idx] < results['train_loss'] else results['train_loss']
+      results['train_acc'] = train_acc[idx] if train_acc[idx] > results['train_acc'] else results['train_acc']
+      results['val_loss'] = val_loss[idx] if val_loss[idx] < results['val_loss'] else results['val_loss']
+      results['val_acc'] = val_acc[idx] if val_acc[idx] > results['val_acc'] else results['val_acc']
+
+    for key, value in results.items():
+      print(f'{key}: {value}')
+
+    t = np.arange(0, len(train_loss), 1)
+    fig, axs = plt.subplots(2, 1)
+
+    color = 'tab:red'
+    axs[0].set_xlabel('epoch')
+    axs[0].set_ylabel('train_loss', color=color)
+    axs[0].plot(t, train_loss, color=color)
+    axs[0].tick_params(axis='y', labelcolor=color)
+
+    ax12 = axs[0].twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'tab:blue'
+    ax12.set_ylabel('train_acc', color=color)  # we already handled the x-label with ax1
+    ax12.plot(t, train_acc, color=color)
+    ax12.tick_params(axis='y', labelcolor=color)
+
+    color = 'tab:red'
+    axs[1].set_xlabel('epoch')
+    axs[1].set_ylabel('val_loss', color=color)
+    axs[1].plot(t, val_loss, color=color)
+    axs[1].tick_params(axis='y', labelcolor=color)
+
+    ax22 = axs[1].twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'tab:blue'
+    ax22.set_ylabel('val_acc', color=color)  # we already handled the x-label with ax1
+    ax22.plot(t, val_acc, color=color)
+    ax22.tick_params(axis='y', labelcolor=color)
+
+    fig.tight_layout()
+    plt.show()
+    if path is not None:
+      fig.savefig(path)

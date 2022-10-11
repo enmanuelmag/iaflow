@@ -8,6 +8,7 @@ import numpy as np
 import pickle as pkl
 import tensorflow as tf
 import subprocess as sp
+import matplotlib.pyplot as plt
 
 from datetime import datetime
 from notifier import Notifier

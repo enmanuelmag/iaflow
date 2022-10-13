@@ -446,7 +446,7 @@ class IAFlow(object):
 
     for idx in range(len(train_loss)):
       cur_val_acc = val_acc[idx]
-      if cur_val_acc < results['val_acc']:
+      if cur_val_acc > results['val_acc']:
         results['train_loss'] = train_loss[idx]
         results['train_acc'] = train_acc[idx]
         results['val_loss'] = val_loss[idx]

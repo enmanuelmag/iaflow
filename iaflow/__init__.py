@@ -431,7 +431,13 @@ class IAFlow(object):
     clear_session()
     gc.collect()
 
-  def plot_history(self, history, path):
+  def __evaluate_metric(self, current = 0, target = 0, monitor = ''):
+    if 'loss' in monitor.lower():
+      return  current < target
+
+    return current > target
+
+  def plot_history(self, history, path, monitor='val_loss'):
     train_loss = history.history['loss']
     train_acc = history.history['accuracy']
     val_loss = history.history['val_loss']
@@ -445,12 +451,14 @@ class IAFlow(object):
     }
 
     for idx in range(len(train_loss)):
-      cur_val_acc = val_acc[idx]
-      if cur_val_acc > results['val_acc']:
+      curr_metric = history.history[monitor][idx]
+      target = results[monitor]
+
+      if self.__evaluate_metric(curr_metric, target, monitor):
         results['train_loss'] = train_loss[idx]
         results['train_acc'] = train_acc[idx]
         results['val_loss'] = val_loss[idx]
-        results['val_acc'] = cur_val_acc
+        results['val_acc'] = val_acc[idx]
 
     for key, value in results.items():
       print(f'{key}: {value}')

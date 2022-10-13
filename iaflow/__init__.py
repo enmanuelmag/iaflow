@@ -445,10 +445,12 @@ class IAFlow(object):
     }
 
     for idx in range(len(train_loss)):
-      results['train_loss'] = train_loss[idx] if train_loss[idx] < results['train_loss'] else results['train_loss']
-      results['train_acc'] = train_acc[idx] if train_acc[idx] > results['train_acc'] else results['train_acc']
-      results['val_loss'] = val_loss[idx] if val_loss[idx] < results['val_loss'] else results['val_loss']
-      results['val_acc'] = val_acc[idx] if val_acc[idx] > results['val_acc'] else results['val_acc']
+      cur_val_loss = val_loss[idx]
+      if cur_val_loss < results['val_loss']:
+        results['train_loss'] = train_loss[idx] if train_loss[idx] < results['train_loss'] else results['train_loss']
+        results['train_acc'] = train_acc[idx] if train_acc[idx] > results['train_acc'] else results['train_acc']
+        results['val_acc'] = val_acc[idx] if val_acc[idx] > results['val_acc'] else results['val_acc']
+        results['val_loss'] = cur_val_loss
 
     for key, value in results.items():
       print(f'{key}: {value}')
@@ -465,14 +467,14 @@ class IAFlow(object):
     ax12 = axs[0].twinx()  # instantiate a second axes that shares the same x-axis
 
     color = 'tab:blue'
-    ax12.set_ylabel('train_acc', color=color)  # we already handled the x-label with ax1
-    ax12.plot(t, train_acc, color=color)
+    ax12.set_ylabel('val_loss', color=color)  # we already handled the x-label with ax1
+    ax12.plot(t, val_loss, color=color)
     ax12.tick_params(axis='y', labelcolor=color)
 
     color = 'tab:red'
     axs[1].set_xlabel('epoch')
-    axs[1].set_ylabel('val_loss', color=color)
-    axs[1].plot(t, val_loss, color=color)
+    axs[1].set_ylabel('train_acc', color=color)
+    axs[1].plot(t, train_acc, color=color)
     axs[1].tick_params(axis='y', labelcolor=color)
 
     ax22 = axs[1].twinx()  # instantiate a second axes that shares the same x-axis

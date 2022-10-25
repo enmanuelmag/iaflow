@@ -408,13 +408,13 @@ class IAFlow(object):
     print(f'Training time: {time.time() - start_time}')
     self.clear_session()
 
-    self.plot_history(history, f"{run_data.get('path_model', '.')}/history.png")
+    #self.plot_history(history, f"{run_data.get('path_model', '.')}/history.png")
     history_path = f'{self.models_folder}/{model_name}/{run_id}/history.pkl'
     with open(history_path, 'wb') as f:
        pkl.dump(history, f)
     return history
 
-  def save(self):
+  def __save(self):
     """
     Future implementation
     """

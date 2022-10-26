@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="iaflow",
-    version='2.2.0',
+    version='2.2.1',
     author="Enmanuel Magallanes Pinargote",
     author_email="enmanuelmag@cardor.dev",
     description="This library help to create models with identifiers, checkpoints, logs and metadata automatically, in order to make the training process more efficient and traceable.",
@@ -21,7 +21,6 @@ setuptools.setup(
     ],
     install_requires=[
         'requests',
-        'tensorflow',
         'discord_webhook',
         'notifier-function'
     ],

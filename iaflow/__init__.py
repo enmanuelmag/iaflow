@@ -285,7 +285,7 @@ class IAFlow(object):
     }
 
     self.models[model_name] = model_data
-    self.save()
+    #self.__save()
     print(f'Model {model_name}/{run_id} was added')
     return model_data[run_id]
 
@@ -339,7 +339,7 @@ class IAFlow(object):
     if len(model) == 0:
       del self.models[model_name]
 
-    self.save()
+    #self.__save()
     print(f'Model {model_name}/{run_id} was deleted')
 
   def train(

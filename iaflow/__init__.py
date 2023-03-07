@@ -6,6 +6,7 @@ import copy
 import shutil
 import numpy as np
 import pickle as pkl
+import seaborn as sns
 import tensorflow as tf
 import subprocess as sp
 import matplotlib.pyplot as plt
@@ -14,7 +15,14 @@ from datetime import datetime
 from notifier import Notifier
 from tensorflow.keras.backend import clear_session
 
-SLIP_KEYS = [ 'run_id', 'model_name' ]
+__SLIP_KEYS__ = [ 'run_id', 'model_name' ]
+
+__METRIC_CONFIG__ = {
+  "name": "val_loss",
+  "initial": float('inf'),
+  "operator": "min",
+  "monitor": True
+}
 
 class NotifierCallback(tf.keras.callbacks.Callback):
 
@@ -176,7 +184,7 @@ class IAFlow(object):
       for run_id, run_id_data in model.items():
         print(f'    {run_id}')
         for key, value in run_id_data.items():
-          if key not in SLIP_KEYS:
+          if key not in __SLIP_KEYS__:
             print(f'      {key}: {value}')
 
   def add_dataset(
@@ -353,6 +361,9 @@ class IAFlow(object):
     epochs = None,
     train_ds = None,
     val_ds = None,
+    metric_config = None,
+    monitor = None,
+    group_plots = None,
   ):
     epochs = epochs or self.datasets.get(dataset_name, {}).get('epochs', 100)
     batch_size = batch_size or self.datasets.get(dataset_name, {}).get('batch_size', None)
@@ -408,10 +419,10 @@ class IAFlow(object):
     print(f'Training time: {time.time() - start_time}')
     self.clear_session()
 
-    #self.plot_history(history, f"{run_data.get('path_model', '.')}/history.png")
-    history_path = f'{self.models_folder}/{model_name}/{run_id}/history.pkl'
-    with open(history_path, 'wb') as f:
-       pkl.dump(history, f)
+    path_save = run_data.get('path_model', '.')
+    df_history = parse_history(history.history, path_save)
+    plot_history(df_history, path_save, metric_config, monitor, group_plots)
+
     return history
 
   def __save(self):
@@ -431,68 +442,61 @@ class IAFlow(object):
     clear_session()
     gc.collect()
 
-  def __evaluate_metric(self, current = 0, target = 0, monitor = ''):
-    if 'loss' in monitor.lower():
-      return  current < target
+  def __evaluate_metric(self, current_value = 0, best_value = 0, operator = ''):
+    if operator == 'min':
+      return current_value < best_value
+    elif operator == 'max':
+      return current_value > best_value
+    else:
+      raise ValueError(f'Operator {operator} not supported')
 
-    return current > target
+  def parse_history(self, history, path):
+    df_history = pd.DataFrame()
+    for key in history.keys():
+      df_history[key.capitalize()] = history[key]
 
-  def plot_history(self, history, path, monitor='val_loss'):
-    train_loss = history.history['loss']
-    train_acc = history.history['accuracy']
-    val_loss = history.history['val_loss']
-    val_acc = history.history['val_accuracy']
+    df_history.to_csv(f'{path}/history.csv', index=False)
+    return df_history
 
-    results = {
-      'train_loss': float('inf'),
-      'train_acc': float('-inf'),
-      'val_loss': float('inf'),
-      'val_acc': float('-inf')
-    }
+  def plot_history(self, df_history, path, metric_config=__METRIC_CONFIG__, monitor='val_loss', group_plots=[['loss', 'val_loss'], ['accuracy', 'val_accuracy']]):
+    assert df_history is not None, 'History must be provided'
+    assert path is not None, 'Path must be provided'
+    assert monitor in df_history.columns, f'Monitor {monitor} not found in history'
+  
+    keys_columns = df_history.columns
+    monitor_data = df_history[monitor].values
 
-    for idx in range(len(train_loss)):
-      curr_metric = history.history[monitor][idx]
-      target = results[monitor]
+    best_value = metric_config["initial"]
+    assert best_value is not None, 'Initial value must be provided'
+    
+    operator = metric_config["operator"]
+    assert operator in ['min', 'max'], f'Operator {operator} not supported'
 
-      if self.__evaluate_metric(curr_metric, target, monitor):
-        results['train_loss'] = train_loss[idx]
-        results['train_acc'] = train_acc[idx]
-        results['val_loss'] = val_loss[idx]
-        results['val_acc'] = val_acc[idx]
+    results = {}
+    for idx, value in enumerate(monitor_data):
+      if self.__evaluate_metric(value, best_value, operator):
+        best_value = value
+        for key in keys_columns:
+          results[key] = df_history[key].values[idx]
 
-    for key, value in results.items():
-      print(f'{key}: {value}')
+    print('Best results:')
+    with open(f'{path}/best_results.txt', 'w') as f:
+      for key, value in results.items():
+        line = f'{key}: {value}'
+        f.write(f'{line}\n')
+        print(line)
 
-    t = np.arange(0, len(train_loss), 1)
-    fig, axs = plt.subplots(2, 1)
+    for group in group_plots:
+      df_group = pd.DataFrame()
 
-    color = 'tab:red'
-    axs[0].set_xlabel('epoch')
-    axs[0].set_ylabel('train_loss', color=color)
-    axs[0].plot(t, train_loss, color=color)
-    axs[0].tick_params(axis='y', labelcolor=color)
+      for key in group:
+        assert key in keys_columns, f'Key {key} not found in history'
+        df_group[key] = df_history[key].values
 
-    ax12 = axs[0].twinx()  # instantiate a second axes that shares the same x-axis
+      sns.lineplot(data=df_group, x='Epoch', y='Value')
+      plt.title(f'{" vs ".join(df_group.columns)}')
+      fig.tight_layout()
+      plt.show()
 
-    color = 'tab:blue'
-    ax12.set_ylabel('val_loss', color=color)  # we already handled the x-label with ax1
-    ax12.plot(t, val_loss, color=color)
-    ax12.tick_params(axis='y', labelcolor=color)
-
-    color = 'tab:red'
-    axs[1].set_xlabel('epoch')
-    axs[1].set_ylabel('train_acc', color=color)
-    axs[1].plot(t, train_acc, color=color)
-    axs[1].tick_params(axis='y', labelcolor=color)
-
-    ax22 = axs[1].twinx()  # instantiate a second axes that shares the same x-axis
-
-    color = 'tab:blue'
-    ax22.set_ylabel('val_acc', color=color)  # we already handled the x-label with ax1
-    ax22.plot(t, val_acc, color=color)
-    ax22.tick_params(axis='y', labelcolor=color)
-
-    fig.tight_layout()
-    plt.show()
-    if path is not None:
-      fig.savefig(path)
+      if path is not None:
+        fig.savefig(f'{path}/{"_".join(df_group.columns)}.png', dpi=300)
